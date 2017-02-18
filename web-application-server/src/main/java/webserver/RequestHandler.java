@@ -9,9 +9,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import db.DataBase;
+import model.User;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -33,10 +37,11 @@ public class RequestHandler extends Thread {
         		OutputStream out = connection.getOutputStream();
         	) {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
-//        	log.debug(br.readLine());
-        	
         	String otherInfoLine;
-        	String[] firstLines = br.readLine().split(" ");
+        	String firstLine = br.readLine();
+        	String[] firstLines = firstLine.split(" ");
+        	
+        	log.debug(firstLine);
         	
         	while((otherInfoLine = br.readLine()) != null && !"".equals(otherInfoLine)) {
         		log.debug(otherInfoLine);
@@ -44,6 +49,23 @@ public class RequestHandler extends Thread {
         	
         	String method = firstLines[0];
         	String reqUrl = firstLines[1];
+        	
+        	if (reqUrl.startsWith("/user/create")) {
+        		int index = reqUrl.indexOf("?");
+            	String reqPath = reqUrl.substring(0, index);
+            	String params = reqUrl.substring(index + 1);
+
+            	Map<String, String> paramMap = util.HttpRequestUtils.parseQueryString(params);
+            	
+            	String id = paramMap.get("userId");
+            	String password = paramMap.get("password");
+            	String name = paramMap.get("name");
+            	String email = paramMap.get("email");
+            	
+            	User user = new User(id, password, name, email);
+            	
+            	DataBase.addUser(user);
+        	}
         	
             DataOutputStream dos = new DataOutputStream(out);
             byte[] body = Files.readAllBytes(new File("./webapp" + reqUrl).toPath());
